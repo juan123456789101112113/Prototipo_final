@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PomodoroFocus UAO — Autorregulación Digital</title>
+
+  <!-- Tabler Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <!-- SheetJS (Excel export) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── CSS Variables ── */
+    :root {
+      --font-sans: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+
+      /* App card (light) */
+      --color-background-primary:   #ffffff;
+      --color-background-secondary: #f2f7f4;
+      --color-background-tertiary:  #e6ede9;
+      --color-border-tertiary:      #dce8e2;
+      --color-border-secondary:     #c4d6cc;
+      --color-text-primary:         #0d2018;
+      --color-text-secondary:       #587066;
+      --color-background-info:      #e1f5ee;
+      --color-text-info:            #085041;
+      --border-radius-xl: 22px;
+      --border-radius-lg: 14px;
+      --border-radius-md:  8px;
+
+      /* Page palette */
+      --page-bg:      #0c1610;
+      --page-accent:  #1D9E75;
+      --page-mid:     #14261d;
+      --page-border:  rgba(29,158,117,.18);
+      --page-glow:    rgba(29,158,117,.08);
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    /* ── Page Shell ── */
+    body {
+      font-family: var(--font-sans);
+      background: var(--page-bg);
+      color: #d4e8de;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* subtle dot-grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(29,158,117,.12) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Header ── */
+    header {
+      position: relative;
+      z-index: 10;
+      padding: 28px 24px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--page-border);
+      background: rgba(12, 22, 16, .7);
+      backdrop-filter: blur(12px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      background: var(--page-accent);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .brand-name {
+      font-size: 17px;
+      font-weight: 700;
+      color: #e8f5ee;
+      letter-spacing: -.3px;
+    }
+    .brand-sub {
+      font-size: 11px;
+      color: var(--color-text-info);
+      margin-top: 1px;
+      font-weight: 500;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+
+    .header-tag {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .6px;
+      text-transform: uppercase;
+      color: var(--page-accent);
+      border: 1px solid var(--page-border);
+      border-radius: 20px;
+      padding: 5px 14px;
+    }
+
+    /* ── Hero strip ── */
+    .hero {
+      position: relative;
+      z-index: 5;
+      text-align: center;
+      padding: 52px 24px 36px;
+    }
+    .hero-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--page-accent);
+      margin-bottom: 14px;
+    }
+    .hero-title {
+      font-size: clamp(26px, 5vw, 42px);
+      font-weight: 700;
+      color: #e8f5ee;
+      letter-spacing: -1px;
+      line-height: 1.15;
+      margin-bottom: 14px;
+    }
+    .hero-title span {
+      color: var(--page-accent);
+    }
+    .hero-desc {
+      font-size: 15px;
+      color: #7aab90;
+      max-width: 480px;
+      margin: 0 auto;
+      line-height: 1.65;
+    }
+
+    /* ── Main layout ── */
+    main {
+      position: relative;
+      z-index: 5;
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 28px;
+      padding: 0 24px 60px;
+      flex-wrap: wrap;
+    }
+
+    /* ── Side info panel ── */
+    .side-panel {
+      width: 240px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding-top: 4px;
+    }
+    .info-card {
+      background: var(--page-mid);
+      border: 1px solid var(--page-border);
+      border-radius: 14px;
+      padding: 18px 16px;
+    }
+    .info-card-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--page-accent);
+      margin-bottom: 14px;
+    }
+    .info-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .info-item:last-child { margin-bottom: 0; }
+    .info-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--page-accent);
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+    .info-text {
+      font-size: 12px;
+      color: #8ab59a;
+      line-height: 1.55;
+    }
+    .info-text strong {
+      color: #c8e4d4;
+      font-weight: 600;
+    }
+
+    .tip-card {
+      background: linear-gradient(135deg, rgba(29,158,117,.14), rgba(29,158,117,.04));
+      border: 1px solid rgba(29,158,117,.3);
+      border-radius: 14px;
+      padding: 18px 16px;
+    }
+    .tip-icon { font-size: 22px; color: var(--page-accent); margin-bottom: 10px; }
+    .tip-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #d4ead8;
+      margin-bottom: 6px;
+    }
+    .tip-body {
+      font-size: 12px;
+      color: #7aab90;
+      line-height: 1.6;
+    }
+
+    /* ── Phone card wrapper ── */
+    .app-wrapper {
+      flex-shrink: 0;
+    }
+
+    /* ── Original app styles (scoped inside .phone) ── */
+    .phone {
+      max-width: 380px;
+      width: 100%;
+      background: var(--color-background-secondary);
+      border-radius: var(--border-radius-xl);
+      border: 1px solid var(--page-border);
+      overflow: hidden;
+      min-height: 700px;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,.04),
+        0 24px 60px rgba(0,0,0,.55),
+        0 0 80px rgba(29,158,117,.06);
+    }
+    .topbar {
+      background: var(--color-background-primary);
+      border-bottom: 0.5px solid var(--color-border-tertiary);
+      padding: 14px 16px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .app-title { font-size: 15px; font-weight: 500; color: var(--color-text-primary); }
+    .week-badge {
+      font-size: 11px;
+      background: var(--color-background-info);
+      color: var(--color-text-info);
+      padding: 3px 10px;
+      border-radius: var(--border-radius-md);
+    }
+    .nav {
+      display: flex;
+      background: var(--color-background-primary);
+      border-bottom: 0.5px solid var(--color-border-tertiary);
+    }
+    .nav-btn {
+      flex: 1;
+      padding: 10px 4px;
+      font-size: 11px;
+      font-weight: 500;
+      border: none;
+      background: none;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all .2s;
+      font-family: var(--font-sans);
+    }
+    .nav-btn.active { color: #1D9E75; border-bottom-color: #1D9E75; }
+    .screen { display: none; padding: 16px; }
+    .screen.active { display: block; }
+
+    .mode-row { display: flex; gap: 6px; margin-bottom: 16px; }
+    .mode-chip {
+      flex: 1;
+      padding: 7px 4px;
+      font-size: 11px;
+      font-weight: 500;
+      border: 0.5px solid var(--color-border-secondary);
+      border-radius: var(--border-radius-md);
+      background: none;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      transition: all .2s;
+      font-family: var(--font-sans);
+    }
+    .mode-chip.active { background: #E1F5EE; border-color: #1D9E75; color: #085041; }
+
+    .timer-card {
+      background: var(--color-background-primary);
+      border: 0.5px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-lg);
+      padding: 24px 16px 20px;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+    .mode-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 1px;
+      color: #1D9E75;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+    .ring-wrap {
+      position: relative;
+      width: 160px;
+      height: 160px;
+      margin: 0 auto 16px;
+    }
+    .ring-wrap svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+    .ring-bg { fill: none; stroke: #E1F5EE; stroke-width: 9; }
+    .ring-fg {
+      fill: none;
+      stroke: #1D9E75;
+      stroke-width: 9;
+      stroke-linecap: round;
+      stroke-dasharray: 440;
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 1s linear, stroke .3s;
+    }
+    .time-center {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+    .time-digits {
+      font-size: 38px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      color: var(--color-text-primary);
+      line-height: 1;
+      font-family: var(--font-mono);
+    }
+    .time-sub { font-size: 11px; color: var(--color-text-secondary); margin-top: 4px; }
+    .ctrl-row { display: flex; align-items: center; justify-content: center; gap: 12px; }
+    .ctrl-main {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      border: 0.5px solid #1D9E75;
+      background: #E1F5EE;
+      color: #085041;
+      font-size: 22px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .2s;
+    }
+    .ctrl-main:hover { background: #9FE1CB; }
+    .ctrl-sec {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      border: 0.5px solid var(--color-border-secondary);
+      background: none;
+      color: var(--color-text-secondary);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .2s;
+    }
+    .ctrl-sec:hover { background: var(--color-background-secondary); }
+
+    .session-count { display: flex; gap: 6px; justify-content: center; align-items: center; margin-top: 14px; }
+    .pom-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      border: 0.5px solid #1D9E75;
+      background: transparent;
+      transition: background .3s;
+    }
+    .pom-dot.done { background: #1D9E75; }
+
+    .stat-row { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; margin-bottom: 14px; }
+    .stat-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px; }
+    .stat-label { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 4px; }
+    .stat-val { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+    .stat-unit { font-size: 12px; font-weight: 400; color: var(--color-text-secondary); margin-left: 2px; }
+
+    .section-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 10px; }
+
+    .activity-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .activity-item {
+      background: var(--color-background-primary);
+      border: 0.5px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-md);
+      padding: 10px 12px;
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .activity-item:hover { border-color: var(--color-border-secondary); }
+    .activity-item.done { background: #E1F5EE; border-color: #5DCAA5; }
+    .act-icon { font-size: 18px; color: var(--color-text-secondary); }
+    .activity-item.done .act-icon { color: #085041; }
+    .act-text { flex: 1; font-size: 13px; color: var(--color-text-primary); }
+    .act-check {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      border: 0.5px solid var(--color-border-secondary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+      color: transparent;
+      transition: all .2s;
+    }
+    .activity-item.done .act-check { background: #1D9E75; border-color: #1D9E75; color: white; }
+
+    .register-card {
+      background: var(--color-background-primary);
+      border: 0.5px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-lg);
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .reg-title { font-size: 13px; font-weight: 500; margin-bottom: 12px; color: var(--color-text-primary); }
+    .reg-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .reg-label { font-size: 13px; color: var(--color-text-secondary); }
+    .reg-input-wrap { display: flex; align-items: center; gap: 6px; }
+    .reg-num { font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums; min-width: 30px; text-align: right; }
+    .reg-unit { font-size: 12px; color: var(--color-text-secondary); }
+    .stepper { display: flex; gap: 4px; }
+    .step-btn {
+      width: 28px; height: 28px;
+      border-radius: var(--border-radius-md);
+      border: 0.5px solid var(--color-border-secondary);
+      background: none;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--color-text-primary);
+      transition: all .2s;
+      font-family: var(--font-sans);
+    }
+    .step-btn:hover { background: var(--color-background-secondary); }
+
+    .save-btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: var(--border-radius-md);
+      border: 0.5px solid #1D9E75;
+      background: #E1F5EE;
+      color: #085041;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+      font-family: var(--font-sans);
+    }
+    .save-btn:hover { background: #9FE1CB; }
+
+    .week-list { display: flex; flex-direction: column; gap: 8px; }
+    .week-entry {
+      background: var(--color-background-primary);
+      border: 0.5px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-md);
+      padding: 12px;
+    }
+    .week-entry-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .week-entry-label { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+    .week-entry-date { font-size: 11px; color: var(--color-text-secondary); }
+    .week-bars { display: flex; flex-direction: column; gap: 5px; }
+    .bar-row { display: flex; align-items: center; gap: 8px; }
+    .bar-label { font-size: 11px; color: var(--color-text-secondary); width: 60px; flex-shrink: 0; }
+    .bar-track { flex: 1; height: 6px; background: var(--color-background-secondary); border-radius: 3px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 3px; transition: width .4s; }
+    .bar-fill.tiktok  { background: #E24B4A; }
+    .bar-fill.pomodoro{ background: #1D9E75; }
+    .bar-val { font-size: 11px; color: var(--color-text-secondary); width: 28px; text-align: right; flex-shrink: 0; }
+
+    .progress-section { margin-bottom: 16px; }
+    .prog-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 10px; }
+
+    .delete-btn {
+      width: 100%;
+      padding: 9px;
+      border-radius: var(--border-radius-md);
+      border: 0.5px solid #e24b4a55;
+      background: none;
+      color: #c0504e;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+      font-family: var(--font-sans);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .delete-btn:hover { background: rgba(226,75,74,.08); border-color: #e24b4a99; }
+
+    /* Modal de confirmación */
+    .confirm-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(13,32,24,.75);
+      backdrop-filter: blur(4px);
+      z-index: 30;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--border-radius-xl);
+    }
+    .confirm-overlay.show { display: flex; }
+    .confirm-box {
+      background: var(--color-background-primary);
+      border: 1px solid var(--color-border-secondary);
+      border-radius: var(--border-radius-lg);
+      padding: 24px 20px;
+      margin: 16px;
+      text-align: center;
+    }
+    .confirm-icon { font-size: 32px; color: #E24B4A; margin-bottom: 10px; }
+    .confirm-title { font-size: 15px; font-weight: 700; color: var(--color-text-primary); margin-bottom: 6px; }
+    .confirm-desc { font-size: 12px; color: var(--color-text-secondary); line-height: 1.55; margin-bottom: 18px; }
+    .confirm-actions { display: flex; gap: 8px; }
+    .confirm-cancel {
+      flex: 1; padding: 10px;
+      border-radius: var(--border-radius-md);
+      border: 0.5px solid var(--color-border-secondary);
+      background: none;
+      color: var(--color-text-secondary);
+      font-size: 13px; font-weight: 500;
+      cursor: pointer; font-family: var(--font-sans);
+      transition: all .2s;
+    }
+    .confirm-cancel:hover { background: var(--color-background-secondary); }
+    .confirm-delete {
+      flex: 1; padding: 10px;
+      border-radius: var(--border-radius-md);
+      border: none;
+      background: #E24B4A;
+      color: #fff;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; font-family: var(--font-sans);
+      transition: all .2s;
+    }
+    .confirm-delete:hover { background: #c73b3a; }
+
+    .excel-btn {
+      width: 100%;
+      padding: 11px;
+      border-radius: var(--border-radius-md);
+      border: 0.5px solid #1a7a4a;
+      background: linear-gradient(135deg, #1a7a4a, #1D9E75);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      font-family: var(--font-sans);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      margin-top: 12px;
+      letter-spacing: .2px;
+    }
+    .excel-btn:hover { filter: brightness(1.12); }
+    .excel-btn:disabled { opacity: .45; cursor: default; }
+
+    /* ── Gráficas ── */
+    .chart-block {
+      background: var(--color-background-primary);
+      border: 0.5px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-md);
+      padding: 12px 12px 10px;
+      margin-bottom: 10px;
+    }
+    .chart-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      margin-bottom: 8px;
+    }
+    .chart-legend {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      color: var(--color-text-secondary);
+    }
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .charts-empty {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    .toast {
+      position: absolute;
+      bottom: 16px; left: 50%;
+      transform: translateX(-50%);
+      background: #1D9E75;
+      color: white;
+      font-size: 13px;
+      padding: 8px 18px;
+      border-radius: var(--border-radius-md);
+      opacity: 0;
+      transition: opacity .3s;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 20;
+    }
+    .toast.show { opacity: 1; }
+
+    /* ── Footer ── */
+    footer {
+      position: relative;
+      z-index: 5;
+      border-top: 1px solid var(--page-border);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      background: rgba(12,22,16,.6);
+    }
+    .footer-left {
+      font-size: 12px;
+      color: #4d7a60;
+    }
+    .footer-left strong { color: #7aab90; font-weight: 600; }
+    .footer-right {
+      font-size: 11px;
+      color: #3a5e49;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .footer-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--page-accent);
+      opacity: .5;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 860px) {
+      .side-panel { display: none; }
+    }
+    @media (max-width: 440px) {
+      header { padding: 18px 16px 14px; }
+      .hero { padding: 36px 16px 28px; }
+      main { padding: 0 12px 48px; }
+      .phone { border-radius: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══ HEADER ══ -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">
+        <i class="ti ti-clock" aria-hidden="true"></i>
+      </div>
+      <div>
+        <div class="brand-name">PomodoroFocus UAO</div>
+        <div class="brand-sub">Autorregulación Digital</div>
+      </div>
+    </div>
+    <div class="header-tag">Dopamina Bajo Control</div>
+  </header>
+
+  <!-- ══ HERO ══ -->
+  <section class="hero">
+    <div class="hero-eyebrow">Proyecto Ingeniería de Datos · Equipo 3</div>
+    <h1 class="hero-title">
+      Enfoca tu atención,<br><span>reduce el ruido digital</span>
+    </h1>
+    <p class="hero-desc">
+      Usa la técnica Pomodoro para mejorar tu concentración, registra tu uso de pantalla semana a semana y sigue tu progreso a lo largo del semestre.
+    </p>
+  </section>
+
+  <!-- ══ MAIN ══ -->
+  <main>
+
+    <!-- Left panel -->
+    <aside class="side-panel">
+      <div class="info-card">
+        <div class="info-card-title">¿Cómo funciona?</div>
+        <div class="info-item">
+          <div class="info-dot"></div>
+          <div class="info-text"><strong>25 min de enfoque</strong> — trabaja sin distracciones en una sola tarea.</div>
+        </div>
+        <div class="info-item">
+          <div class="info-dot"></div>
+          <div class="info-text"><strong>5 min de descanso</strong> — aléjate de la pantalla y muévete.</div>
+        </div>
+        <div class="info-item">
+          <div class="info-dot"></div>
+          <div class="info-text"><strong>Después de 4 ciclos</strong> — toma un descanso largo de 15 min.</div>
+        </div>
+        <div class="info-item">
+          <div class="info-dot"></div>
+          <div class="info-text"><strong>Registra tu semana</strong> — anota tu tiempo en TikTok y tu nivel de concentración.</div>
+        </div>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-icon"><i class="ti ti-bulb" aria-hidden="true"></i></div>
+        <div class="tip-title">Consejo del día</div>
+        <div class="tip-body">
+          Pon tu celular boca abajo durante cada sesión de enfoque. Las notificaciones visuales afectan tu concentración incluso cuando no las lees.
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-card-title">Meta del proyecto</div>
+        <div class="info-item">
+          <div class="info-dot"></div>
+          <div class="info-text">Reducir el tiempo en TikTok <strong>de forma progresiva</strong> durante 8 semanas.</div>
+        </div>
+        <div class="info-item">
+          <div class="info-dot"></div>
+          <div class="info-text">Incrementar sesiones de estudio enfocado semana a semana.</div>
+        </div>
+        <div class="info-item">
+          <div class="info-dot"></div>
+          <div class="info-text">Mejorar la <strong>autoevaluación</strong> de concentración al finalizar cada semana.</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- App card -->
+    <div class="app-wrapper">
+      <h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">
+        App Pomodoro — temporizador, registro de sesiones y seguimiento de uso de pantalla
+      </h2>
+
+      <div class="phone" style="position:relative">
+        <div class="topbar">
+          <div class="app-title"><i class="ti ti-clock" style="font-size:15px;vertical-align:-2px;margin-right:5px" aria-hidden="true"></i>PomodoroFocus UAO</div>
+          <div class="week-badge" id="week-badge">Semana 1</div>
+        </div>
+        <div class="nav">
+          <button class="nav-btn active" onclick="showScreen('timer',this)"><i class="ti ti-player-play" style="font-size:14px;display:block;margin:0 auto 2px" aria-hidden="true"></i>Temporizador</button>
+          <button class="nav-btn" onclick="showScreen('registro',this)"><i class="ti ti-edit" style="font-size:14px;display:block;margin:0 auto 2px" aria-hidden="true"></i>Registro</button>
+          <button class="nav-btn" onclick="showScreen('progreso',this)"><i class="ti ti-chart-bar" style="font-size:14px;display:block;margin:0 auto 2px" aria-hidden="true"></i>Progreso</button>
+        </div>
+
+        <!-- Temporizador -->
+        <div id="screen-timer" class="screen active">
+          <div class="mode-row">
+            <button class="mode-chip active" onclick="setMode('pomodoro',this)">Pomodoro<br>25 min</button>
+            <button class="mode-chip" onclick="setMode('corto',this)">Descanso<br>corto 5 min</button>
+            <button class="mode-chip" onclick="setMode('largo',this)">Descanso<br>largo 15 min</button>
+          </div>
+
+          <div class="timer-card">
+            <div class="mode-label" id="mode-label">Sesión de enfoque</div>
+            <div class="ring-wrap">
+              <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+                <circle class="ring-bg" cx="80" cy="80" r="70"/>
+                <circle class="ring-fg" id="ring" cx="80" cy="80" r="70"/>
+              </svg>
+              <div class="time-center">
+                <div class="time-digits" id="timer-display">25:00</div>
+                <div class="time-sub" id="timer-sub">listo para empezar</div>
+              </div>
+            </div>
+            <div class="ctrl-row">
+              <button class="ctrl-sec" onclick="resetTimer()" aria-label="Reiniciar"><i class="ti ti-refresh" style="font-size:16px" aria-hidden="true"></i></button>
+              <button class="ctrl-main" id="play-btn" onclick="toggleTimer()" aria-label="Iniciar o pausar"><i class="ti ti-player-play" style="font-size:22px" id="play-icon" aria-hidden="true"></i></button>
+              <button class="ctrl-sec" onclick="skipTimer()" aria-label="Saltar"><i class="ti ti-player-skip-forward" style="font-size:16px" aria-hidden="true"></i></button>
+            </div>
+            <div class="session-count" id="dot-row"></div>
+          </div>
+
+          <div class="stat-row">
+            <div class="stat-card">
+              <div class="stat-label">Sesiones hoy</div>
+              <div class="stat-val" id="sessions-today">0<span class="stat-unit">/ 8</span></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Enfoque acumulado</div>
+              <div class="stat-val" id="focus-today">0<span class="stat-unit">min</span></div>
+            </div>
+          </div>
+
+          <div class="section-title">Actividades sustitutivas</div>
+          <div class="activity-list" id="act-list"></div>
+        </div>
+
+        <!-- Registro -->
+        <div id="screen-registro" class="screen">
+          <div class="register-card">
+            <div class="reg-title"><i class="ti ti-calendar" style="font-size:15px;vertical-align:-2px;margin-right:6px" aria-hidden="true"></i>Registro de hoy</div>
+            <div class="reg-row">
+              <span class="reg-label">Tiempo en TikTok</span>
+              <div class="reg-input-wrap">
+                <div class="stepper">
+                  <button class="step-btn" onclick="adj('tiktok',-5)">−</button>
+                  <button class="step-btn" onclick="adj('tiktok',5)">+</button>
+                </div>
+                <div><span class="reg-num" id="reg-tiktok">60</span><span class="reg-unit">min</span></div>
+              </div>
+            </div>
+            <div class="reg-row">
+              <span class="reg-label">Sesiones Pomodoro</span>
+              <div class="reg-input-wrap">
+                <div class="stepper">
+                  <button class="step-btn" onclick="adj('pom',-1)">−</button>
+                  <button class="step-btn" onclick="adj('pom',1)">+</button>
+                </div>
+                <div><span class="reg-num" id="reg-pom">0</span><span class="reg-unit">sesiones</span></div>
+              </div>
+            </div>
+            <div class="reg-row">
+              <span class="reg-label">Concentración</span>
+              <div class="reg-input-wrap">
+                <div class="stepper">
+                  <button class="step-btn" onclick="adj('conc',-1)">−</button>
+                  <button class="step-btn" onclick="adj('conc',1)">+</button>
+                </div>
+                <div><span class="reg-num" id="reg-conc">5</span><span class="reg-unit">/ 10</span></div>
+              </div>
+            </div>
+            <div class="reg-row" style="margin-bottom:0">
+              <span class="reg-label">Semana actual</span>
+              <div class="reg-input-wrap">
+                <div class="stepper">
+                  <button class="step-btn" onclick="adj('week',-1)">−</button>
+                  <button class="step-btn" onclick="adj('week',1)">+</button>
+                </div>
+                <div><span class="reg-num" id="reg-week">1</span><span class="reg-unit">de 8</span></div>
+              </div>
+            </div>
+          </div>
+          <button class="save-btn" onclick="saveEntry()"><i class="ti ti-check" style="font-size:15px;vertical-align:-2px;margin-right:5px" aria-hidden="true"></i>Guardar registro de hoy</button>
+        </div>
+
+        <!-- Progreso -->
+        <div id="screen-progreso" class="screen">
+          <div class="progress-section">
+            <div class="prog-title">Resumen del proyecto</div>
+            <div class="stat-row">
+              <div class="stat-card">
+                <div class="stat-label">Semanas registradas</div>
+                <div class="stat-val" id="p-weeks">0<span class="stat-unit">/ 8</span></div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Reducción TikTok</div>
+                <div class="stat-val" id="p-reduction">—</div>
+              </div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-card">
+                <div class="stat-label">Total sesiones</div>
+                <div class="stat-val" id="p-sessions">0</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Conc. promedio</div>
+                <div class="stat-val" id="p-conc">—<span class="stat-unit">/ 10</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Gráficas -->
+          <div id="charts-area">
+            <div class="charts-empty" id="charts-empty">
+              Aún no hay registros.<br>Ve a la pestaña Registro para empezar.
+            </div>
+            <div id="charts-content" style="display:none">
+              <div class="chart-block">
+                <div class="chart-label">📱 Tiempo en TikTok por semana</div>
+                <div class="chart-legend">
+                  <div class="legend-item"><div class="legend-dot" style="background:#E24B4A"></div>Minutos en TikTok</div>
+                  <div class="legend-item"><div class="legend-dot" style="background:#FFA726;border-radius:2px"></div>Meta (–30%)</div>
+                </div>
+                <canvas id="chart-tiktok" height="140"></canvas>
+              </div>
+              <div class="chart-block">
+                <div class="chart-label">🍅 Sesiones Pomodoro por semana</div>
+                <canvas id="chart-pom" height="130"></canvas>
+              </div>
+              <div class="chart-block">
+                <div class="chart-label">🧠 Concentración por semana</div>
+                <div class="chart-legend">
+                  <div class="legend-item"><div class="legend-dot" style="background:#7C3AED"></div>Autoevaluación (1–10)</div>
+                </div>
+                <canvas id="chart-conc" height="130"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:14px">
+            <div class="prog-title">Historial semanal</div>
+            <div class="week-list" id="week-list">
+              <div style="font-size:13px;color:var(--color-text-secondary);text-align:center;padding:24px 0">
+                Aún no hay registros.<br>Ve a la pestaña Registro para empezar.
+              </div>
+            </div>
+            <button class="excel-btn" id="excel-btn" onclick="exportExcel()" disabled>
+              <i class="ti ti-table-export" style="font-size:16px" aria-hidden="true"></i>
+              Descargar datos en Excel
+            </button>
+            <button class="delete-btn" onclick="confirmDelete()">
+              <i class="ti ti-trash" style="font-size:14px" aria-hidden="true"></i>
+              Borrar todos los datos
+            </button>
+          </div>
+        </div>
+
+        <div class="toast" id="toast"></div>
+
+        <!-- Modal borrar datos -->
+        <div class="confirm-overlay" id="confirm-overlay">
+          <div class="confirm-box">
+            <div class="confirm-icon"><i class="ti ti-trash-x" aria-hidden="true"></i></div>
+            <div class="confirm-title">¿Borrar todos los datos?</div>
+            <div class="confirm-desc">Se eliminarán todos los registros semanales, sesiones de hoy y actividades marcadas. Esta acción no se puede deshacer.</div>
+            <div class="confirm-actions">
+              <button class="confirm-cancel" onclick="closeConfirm()">Cancelar</button>
+              <button class="confirm-delete" onclick="deleteAllData()"><i class="ti ti-trash" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>Sí, borrar todo</button>
+            </div>
+          </div>
+        </div>
+      </div><!-- /.phone -->
+    </div><!-- /.app-wrapper -->
+
+    <!-- Right panel (mirror for balance) -->
+    <aside class="side-panel">
+      <div class="info-card">
+        <div class="info-card-title">Indicadores clave</div>
+        <div class="info-item">
+          <div class="info-dot"></div>
+          <div class="info-text"><strong>Tiempo TikTok</strong> — meta: reducir al menos un 30% entre semana 1 y semana 8.</div>
+        </div>
+        <div class="info-item">
+          <div class="info-dot"></div>
+          <div class="info-text"><strong>Sesiones Pomodoro</strong> — meta: llegar a 8 sesiones diarias constantes.</div>
+        </div>
+        <div class="info-item">
+          <div class="info-dot"></div>
+          <div class="info-text"><strong>Concentración</strong> — escala 1–10, autoevaluada al final del día.</div>
+        </div>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-icon"><i class="ti ti-brain" aria-hidden="true"></i></div>
+        <div class="tip-title">La dopamina y el scroll</div>
+        <div class="tip-body">
+          TikTok usa micro-recompensas impredecibles para mantener tu atención. Cada sesión Pomodoro entrena a tu cerebro a encontrar satisfacción en el trabajo profundo.
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-card-title">Actividades sustitutivas</div>
+        <div class="info-item">
+          <div class="info-dot"></div>
+          <div class="info-text">Prefiere actividades que <strong>no generen dopamina inmediata</strong>: leer, caminar, conversar en persona.</div>
+        </div>
+        <div class="info-item">
+          <div class="info-dot"></div>
+          <div class="info-text">Marca las actividades al completarlas — el registro visual refuerza el hábito.</div>
+        </div>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- ══ FOOTER ══ -->
+  <footer>
+    <div class="footer-left">
+      <strong>Universidad Autónoma de Occidente</strong> — Facultad de Ingeniería · Primer semestre
+    </div>
+    <div class="footer-right">
+      <div class="footer-dot"></div>
+      Equipo 3 — Dopamina Bajo Control
+      <div class="footer-dot"></div>
+      Comunicación Oral y Escrita
+    </div>
+  </footer>
+
+  <!-- ══ SCRIPT ══ -->
+  <script>
+    const MODES = {
+      pomodoro: { label: 'Sesión de enfoque',  secs: 25*60, color: '#1D9E75', bg: '#E1F5EE' },
+      corto:    { label: 'Descanso corto',      secs:  5*60, color: '#378ADD', bg: '#E6F1FB' },
+      largo:    { label: 'Descanso largo',      secs: 15*60, color: '#BA7517', bg: '#FAEEDA' }
+    };
+    const ACTIVITIES_BY_MODE = {
+      pomodoro: [
+        { icon: 'ti-book',    text: 'Leer un capítulo del libro de clase' },
+        { icon: 'ti-pencil',  text: 'Repasar apuntes de la clase anterior' },
+        { icon: 'ti-school',  text: 'Hacer un ejercicio de clase' },
+        { icon: 'ti-notes',   text: 'Escribir en el diario de reflexión' },
+        { icon: 'ti-friends', text: 'Conversar con un compañero en persona' }
+      ],
+      corto: [
+        { icon: 'ti-book',    text: 'Leer un capítulo del libro de clase' },
+        { icon: 'ti-pencil',  text: 'Repasar apuntes de la clase anterior' },
+        { icon: 'ti-run',     text: 'Caminar 5 minutos sin celular' },
+        { icon: 'ti-notes',   text: 'Escribir en el diario de reflexión' },
+        { icon: 'ti-friends', text: 'Conversar con un compañero en persona' }
+      ],
+      largo: [
+        { icon: 'ti-book',    text: 'Leer un capítulo del libro de clase' },
+        { icon: 'ti-pencil',  text: 'Repasar apuntes de la clase anterior' },
+        { icon: 'ti-walk',    text: 'Caminar 15 minutos sin celular' },
+        { icon: 'ti-notes',   text: 'Escribir en el diario de reflexión' },
+        { icon: 'ti-friends', text: 'Conversar con un compañero en persona' }
+      ]
+    };
+    const CIRC = 2 * Math.PI * 70;
+    const STORAGE_KEY = 'pomodorofocus_uao_v1';
+
+    /* ── Persistencia ── */
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch(e) { return null; }
+    }
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          sessionsToday, focusToday,
+          actDone: [...actDone],
+          regVals,
+          entries,
+          savedDate: new Date().toDateString()
+        }));
+      } catch(e) {}
+    }
+
+    /* ── Inicializar con datos guardados ── */
+    const saved = loadState();
+    const todayStr = new Date().toDateString();
+
+    let sessionsToday, focusToday, actDone, regVals, entries;
+
+    if (saved) {
+      // Si el registro es de otro día, reinicia sesiones del día pero conserva historial
+      if (saved.savedDate !== todayStr) {
+        sessionsToday = 0;
+        focusToday    = 0;
+        actDone       = new Set();
+        regVals       = saved.regVals || { tiktok: 60, pom: 0, conc: 5, week: 1 };
+        regVals.pom   = 0;
+        entries       = saved.entries || [];
+      } else {
+        sessionsToday = saved.sessionsToday || 0;
+        focusToday    = saved.focusToday    || 0;
+        actDone       = new Set(saved.actDone || []);
+        regVals       = saved.regVals       || { tiktok: 60, pom: 0, conc: 5, week: 1 };
+        entries       = saved.entries       || [];
+      }
+    } else {
+      sessionsToday = 0; focusToday = 0; actDone = new Set();
+      regVals = { tiktok: 60, pom: 0, conc: 5, week: 1 };
+      entries = [];
+    }
+
+    let curMode = 'pomodoro', timerSecs = 25*60, running = false, interval = null;
+
+    function buildDots() {
+      const r = document.getElementById('dot-row'); r.innerHTML = '';
+      for (let i = 0; i < 8; i++) {
+        const d = document.createElement('div');
+        d.className = 'pom-dot' + (i < sessionsToday ? ' done' : '');
+        r.appendChild(d);
+      }
+    }
+
+    function updateRing() {
+      const total = MODES[curMode].secs;
+      const pct = timerSecs / total;
+      const offset = CIRC * (1 - pct);
+      document.getElementById('ring').style.strokeDashoffset = offset.toFixed(1);
+      document.getElementById('ring').style.stroke = MODES[curMode].color;
+    }
+
+    function fmt(s) {
+      const m = Math.floor(s / 60), sec = s % 60;
+      return String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+    }
+
+    function render() {
+      document.getElementById('timer-display').textContent = fmt(timerSecs);
+      updateRing();
+    }
+
+    function setMode(m, btn) {
+      curMode = m; timerSecs = MODES[m].secs;
+      running = false; clearInterval(interval);
+      document.getElementById('play-icon').className = 'ti ti-player-play';
+      document.getElementById('mode-label').textContent = MODES[m].label;
+      document.getElementById('ring').style.stroke = MODES[m].color;
+      document.querySelector('.ring-bg').style.stroke = MODES[m].bg || '#E1F5EE';
+      document.getElementById('timer-sub').textContent = 'listo para empezar';
+      document.querySelectorAll('.mode-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      actDone = new Set();
+      buildActivities();
+      render();
+    }
+
+    function toggleTimer() {
+      if (!running) {
+        running = true;
+        document.getElementById('play-icon').className = 'ti ti-player-pause';
+        document.getElementById('timer-sub').textContent = 'en progreso...';
+        interval = setInterval(() => {
+          timerSecs--; render();
+          if (timerSecs <= 0) { clearInterval(interval); running = false; onComplete(); }
+        }, 1000);
+      } else {
+        running = false; clearInterval(interval);
+        document.getElementById('play-icon').className = 'ti ti-player-play';
+        document.getElementById('timer-sub').textContent = 'pausado';
+      }
+    }
+
+    function resetTimer() {
+      running = false; clearInterval(interval);
+      timerSecs = MODES[curMode].secs;
+      document.getElementById('play-icon').className = 'ti ti-player-play';
+      document.getElementById('timer-sub').textContent = 'listo para empezar';
+      render();
+    }
+
+    function skipTimer() { running = false; clearInterval(interval); onComplete(); }
+
+    function onComplete() {
+      if (curMode === 'pomodoro') {
+        sessionsToday++; focusToday += 25;
+        document.getElementById('sessions-today').innerHTML = sessionsToday + '<span class="stat-unit">/ 8</span>';
+        document.getElementById('focus-today').innerHTML    = focusToday   + '<span class="stat-unit">min</span>';
+        regVals.pom = sessionsToday;
+        document.getElementById('reg-pom').textContent = sessionsToday;
+        buildDots();
+        showToast('¡Sesión completada! Toma un descanso');
+      } else {
+        showToast('Descanso terminado. ¡A concentrarse!');
+      }
+      timerSecs = MODES[curMode].secs;
+      document.getElementById('play-icon').className = 'ti ti-player-play';
+      document.getElementById('timer-sub').textContent = 'completado';
+      render();
+      saveState();
+    }
+
+    function buildActivities() {
+      const ACTIVITIES = ACTIVITIES_BY_MODE[curMode];
+      const list = document.getElementById('act-list'); list.innerHTML = '';
+      ACTIVITIES.forEach((a, i) => {
+        const el = document.createElement('div');
+        el.className = 'activity-item' + (actDone.has(i) ? ' done' : '');
+        el.onclick = () => { actDone.has(i) ? actDone.delete(i) : actDone.add(i); buildActivities(); saveState(); };
+        el.innerHTML = `<i class="ti ${a.icon} act-icon" aria-hidden="true"></i><span class="act-text">${a.text}</span><div class="act-check">${actDone.has(i) ? '<i class="ti ti-check" style="font-size:11px" aria-hidden="true"></i>' : ''}</div>`;
+        list.appendChild(el);
+      });
+    }
+
+    function adj(k, d) {
+      const limits = { tiktok: [0,480], pom: [0,16], conc: [1,10], week: [1,8] };
+      regVals[k] = Math.max(limits[k][0], Math.min(limits[k][1], regVals[k] + d));
+      document.getElementById('reg-' + k).textContent = regVals[k];
+      if (k === 'week') document.getElementById('week-badge').textContent = 'Semana ' + regVals[k];
+      saveState();
+    }
+
+    function saveEntry() {
+      const w = regVals.week;
+      const idx = entries.findIndex(e => e.week === w);
+      const entry = { week: w, tiktok: regVals.tiktok, pom: regVals.pom, conc: regVals.conc, date: new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'short'}) };
+      if (idx > -1) entries[idx] = entry; else entries.push(entry);
+      entries.sort((a,b) => a.week - b.week);
+      renderProgress();
+      saveState();
+      showToast('Registro semana ' + w + ' guardado');
+    }
+
+    function confirmDelete() {
+      document.getElementById('confirm-overlay').classList.add('show');
+    }
+    function closeConfirm() {
+      document.getElementById('confirm-overlay').classList.remove('show');
+    }
+    function deleteAllData() {
+      localStorage.removeItem(STORAGE_KEY);
+      sessionsToday = 0; focusToday = 0;
+      actDone = new Set();
+      regVals = { tiktok: 60, pom: 0, conc: 5, week: 1 };
+      entries = [];
+      // Resetear UI del timer
+      document.getElementById('sessions-today').innerHTML = '0<span class="stat-unit">/ 8</span>';
+      document.getElementById('focus-today').innerHTML    = '0<span class="stat-unit">min</span>';
+      document.getElementById('reg-tiktok').textContent = 60;
+      document.getElementById('reg-pom').textContent    = 0;
+      document.getElementById('reg-conc').textContent   = 5;
+      document.getElementById('reg-week').textContent   = 1;
+      document.getElementById('week-badge').textContent = 'Semana 1';
+      buildDots(); buildActivities(); render();
+      renderProgress();
+      closeConfirm();
+      showToast('Todos los datos fueron borrados');
+    }
+
+    /* ── Exportar a Excel ── */
+    function exportExcel() {
+      if (!entries.length) return;
+
+      const wb = XLSX.utils.book_new();
+
+      /* ── Hoja 1: Datos semanales ── */
+      const headers = ['Semana', 'Fecha', 'TikTok (min)', 'Sesiones Pomodoro', 'Concentración (1-10)', 'Enfoque (min)', 'TikTok Meta -30% (min)'];
+      const metaStart = entries[0].tiktok;
+      const rows = entries.map((e, i) => {
+        const t = entries.length > 1 ? i / (entries.length - 1) : 0;
+        const meta = Math.round(metaStart - (metaStart * 0.3) * t);
+        return [e.week, e.date, e.tiktok, e.pom, e.conc, e.pom * 25, meta];
+      });
+      const ws1 = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+      // Anchos de columna
+      ws1['!cols'] = [{ wch: 8 }, { wch: 12 }, { wch: 14 }, { wch: 20 }, { wch: 22 }, { wch: 14 }, { wch: 22 }];
+
+      // Estilo de encabezado (fila 1)
+      headers.forEach((_, c) => {
+        const cell = XLSX.utils.encode_cell({ r: 0, c });
+        if (!ws1[cell]) return;
+        ws1[cell].s = {
+          font: { bold: true, color: { rgb: 'FFFFFF' } },
+          fill: { fgColor: { rgb: '1D9E75' } },
+          alignment: { horizontal: 'center' }
+        };
+      });
+
+      XLSX.utils.book_append_sheet(wb, ws1, 'Registro Semanal');
+
+      /* ── Hoja 2: Resumen ── */
+      const totSess  = entries.reduce((s, e) => s + e.pom, 0);
+      const avgConc  = entries.length ? (entries.reduce((s, e) => s + e.conc, 0) / entries.length).toFixed(1) : '—';
+      const redPct   = entries.length >= 2
+        ? Math.round((entries[0].tiktok - entries[entries.length-1].tiktok) / entries[0].tiktok * 100) + '%'
+        : '—';
+
+      const summary = [
+        ['Resumen — Dopamina Bajo Control'],
+        [],
+        ['Proyecto',         'PomodoroFocus UAO'],
+        ['Equipo',           'Equipo 3'],
+        ['Universidad',      'Universidad Autónoma de Occidente'],
+        ['Semanas registradas', entries.length + ' / 8'],
+        ['Total sesiones Pomodoro', totSess],
+        ['Enfoque total acumulado (min)', totSess * 25],
+        ['Concentración promedio', avgConc + ' / 10'],
+        ['Reducción TikTok (S1 → última)', redPct],
+        [],
+        ['Generado el', new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })]
+      ];
+      const ws2 = XLSX.utils.aoa_to_sheet(summary);
+      ws2['!cols'] = [{ wch: 34 }, { wch: 28 }];
+
+      // Título grande
+      if (ws2['A1']) {
+        ws2['A1'].s = { font: { bold: true, sz: 14, color: { rgb: '085041' } } };
+      }
+
+      XLSX.utils.book_append_sheet(wb, ws2, 'Resumen');
+
+      XLSX.writeFile(wb, 'Dopamina_Bajo_Control_Equipo3.xlsx');
+      showToast('Excel descargado correctamente');
+    }
+
+    /* ── Habilitar botón ── */
+    function updateExcelBtn() {
+      const btn = document.getElementById('excel-btn');
+      if (!btn) return;
+      btn.disabled = entries.length === 0;
+    }
+    let chartTiktok = null, chartPom = null, chartConc = null;
+
+    function destroyCharts() {
+      if (chartTiktok) { chartTiktok.destroy(); chartTiktok = null; }
+      if (chartPom)    { chartPom.destroy();    chartPom    = null; }
+      if (chartConc)   { chartConc.destroy();   chartConc   = null; }
+    }
+
+    function renderProgress() {
+      const pw = document.getElementById('p-weeks'), pr = document.getElementById('p-reduction'),
+            ps = document.getElementById('p-sessions'), pc = document.getElementById('p-conc'),
+            wl = document.getElementById('week-list');
+
+      pw.innerHTML = entries.length + '<span class="stat-unit">/ 8</span>';
+
+      if (entries.length >= 2) {
+        const first = entries[0].tiktok, last = entries[entries.length-1].tiktok;
+        const pct = Math.round((first - last) / first * 100);
+        pr.innerHTML = (pct > 0 ? '-' : '+') + Math.abs(pct) + '<span class="stat-unit">%</span>';
+      } else { pr.textContent = '—'; }
+
+      const totSess = entries.reduce((s,e) => s + e.pom, 0);
+      ps.textContent = totSess;
+
+      if (entries.length) {
+        const avgC = (entries.reduce((s,e) => s + e.conc, 0) / entries.length).toFixed(1);
+        pc.innerHTML = avgC + '<span class="stat-unit">/ 10</span>';
+      } else { pc.textContent = '—'; }
+
+      // ── Sin datos ──
+      if (entries.length === 0) {
+        document.getElementById('charts-empty').style.display  = 'block';
+        document.getElementById('charts-content').style.display = 'none';
+        wl.innerHTML = '<div style="font-size:13px;color:var(--color-text-secondary);text-align:center;padding:24px 0">Aún no hay registros.<br>Ve a la pestaña Registro para empezar.</div>';
+        destroyCharts();
+        updateExcelBtn();
+        return;
+      }
+
+      document.getElementById('charts-empty').style.display  = 'none';
+      document.getElementById('charts-content').style.display = 'block';
+
+      const labels  = entries.map(e => 'S' + e.week);
+      const tikData = entries.map(e => e.tiktok);
+      const pomData = entries.map(e => e.pom);
+      const concData= entries.map(e => e.conc);
+
+      // Meta TikTok: reducción del 30% lineal desde semana 1
+      const metaStart = tikData[0];
+      const metaEnd   = Math.round(metaStart * 0.7);
+      const metaData  = entries.map((_,i) => {
+        const t = entries.length > 1 ? i / (entries.length - 1) : 0;
+        return Math.round(metaStart - (metaStart - metaEnd) * t);
+      });
+
+      const baseOpts = {
+        responsive: true,
+        animation: { duration: 500 },
+        plugins: { legend: { display: false }, tooltip: { titleFont: { size: 11 }, bodyFont: { size: 11 } } },
+        scales: {
+          x: { ticks: { font: { size: 10 }, color: '#587066' }, grid: { color: 'rgba(88,112,102,.12)' } },
+          y: { ticks: { font: { size: 10 }, color: '#587066' }, grid: { color: 'rgba(88,112,102,.12)' } }
+        }
+      };
+
+      destroyCharts();
+
+      // ── Gráfica 1: TikTok ──
+      chartTiktok = new Chart(document.getElementById('chart-tiktok'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'TikTok (min)',
+              data: tikData,
+              borderColor: '#E24B4A',
+              backgroundColor: 'rgba(226,75,74,.12)',
+              borderWidth: 2,
+              pointRadius: 4,
+              pointBackgroundColor: '#E24B4A',
+              tension: 0.35,
+              fill: true
+            },
+            {
+              label: 'Meta –30%',
+              data: metaData,
+              borderColor: '#FFA726',
+              borderDash: [5,4],
+              borderWidth: 1.5,
+              pointRadius: 0,
+              tension: 0.1,
+              fill: false
+            }
+          ]
+        },
+        options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, beginAtZero: true, title: { display: true, text: 'min', font: { size: 9 }, color: '#587066' } } } }
+      });
+
+      // ── Gráfica 2: Pomodoros ──
+      chartPom = new Chart(document.getElementById('chart-pom'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Pomodoros',
+            data: pomData,
+            backgroundColor: entries.map(() => 'rgba(29,158,117,.75)'),
+            borderColor: '#1D9E75',
+            borderWidth: 1,
+            borderRadius: 5
+          }]
+        },
+        options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, beginAtZero: true, ticks: { ...baseOpts.scales.y.ticks, stepSize: 1 } } } }
+      });
+
+      // ── Gráfica 3: Concentración ──
+      chartConc = new Chart(document.getElementById('chart-conc'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Concentración',
+            data: concData,
+            borderColor: '#7C3AED',
+            backgroundColor: 'rgba(124,58,237,.1)',
+            borderWidth: 2,
+            pointRadius: 4,
+            pointBackgroundColor: '#7C3AED',
+            tension: 0.35,
+            fill: true
+          }]
+        },
+        options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, min: 0, max: 10, ticks: { ...baseOpts.scales.y.ticks, stepSize: 2 } } } }
+      });
+
+      // ── Historial de barras (mantener) ──
+      const maxTik = Math.max(...tikData, 1);
+      const maxPom = Math.max(...pomData, 1);
+      wl.innerHTML = entries.map(e => {
+        const tikPct = Math.round(e.tiktok / maxTik * 100);
+        const pomPct = Math.round(e.pom    / maxPom * 100);
+        return `<div class="week-entry"><div class="week-entry-top"><span class="week-entry-label">Semana ${e.week}</span><span class="week-entry-date">${e.date}</span></div><div class="week-bars"><div class="bar-row"><span class="bar-label">TikTok</span><div class="bar-track"><div class="bar-fill tiktok" style="width:${tikPct}%"></div></div><span class="bar-val">${e.tiktok}m</span></div><div class="bar-row"><span class="bar-label">Pomodoros</span><div class="bar-track"><div class="bar-fill pomodoro" style="width:${pomPct}%"></div></div><span class="bar-val">${e.pom}</span></div></div></div>`;
+      }).join('');
+
+      updateExcelBtn();
+    }
+
+    function showScreen(id, btn) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screen-' + id).classList.add('active');
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (id === 'progreso') renderProgress();
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    /* ── Init ── */
+    buildDots(); buildActivities(); render();
+
+    // Restaurar valores guardados en la interfaz
+    document.getElementById('sessions-today').innerHTML = sessionsToday + '<span class="stat-unit">/ 8</span>';
+    document.getElementById('focus-today').innerHTML    = focusToday   + '<span class="stat-unit">min</span>';
+    document.getElementById('reg-tiktok').textContent = regVals.tiktok;
+    document.getElementById('reg-pom').textContent    = regVals.pom;
+    document.getElementById('reg-conc').textContent   = regVals.conc;
+    document.getElementById('reg-week').textContent   = regVals.week;
+    document.getElementById('week-badge').textContent = 'Semana ' + regVals.week;
+  </script>
+</body>
+</html>
